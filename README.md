@@ -40,8 +40,14 @@ Esta API RESTful, desenvolvida com Express.js e SQLite, oferece funcionalidades 
 | prototype_link | TEXT | Link para o protótipo |
 | url_link | TEXT | Link para o projeto final |
 
-### Rotas Disponíveis
+### Endpoints Completos
 
+| Recurso | URL |
+|---|---|
+| Usuários | https://api-base-r8l5.onrender.com/users |
+| Projetos | https://api-base-r8l5.onrender.com/projects |
+
+### Rotas Disponíveis
 #### Rotas para users
 * **GET /users/:id**
   * Descrição: Obter usuário por ID.
