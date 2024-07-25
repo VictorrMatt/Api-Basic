@@ -1,5 +1,5 @@
 {
-  "name": "portfo.io",
+  "name": "base-api",
   "version": "1.0.0",
   "description": "a basic project that manages simple portfolios",
   "main": "index.js",
