@@ -1,12 +1,16 @@
 const sqliteConnection = require("../../sqlite/");
-const createUsers = require("./createUsers");
+const { createUsers, createProjects } = require("./createUsers");
 
 async function migrationsRun() {
-  const schemas = [createUsers].join("");
+  try {
+    const db = await sqliteConnection();
 
-  sqliteConnection()
-    .then((db) => db.exec(schemas))
-    .catch((error) => console.error(error));
+    // Assegure que as SQLs estão concatenadas corretamente
+    const schemas = [createUsers, createProjects].join(";");
+    await db.exec(schemas);
+  } catch (error) {
+    console.error("Error running migrations:", error);
+  }
 }
 
 module.exports = migrationsRun;
