@@ -3,7 +3,9 @@ const createUsers = `CREATE TABLE IF NOT EXISTS users (
   name VARCHAR,
   position VARCHAR,
   password VARCHAR,
-  about VARCHAR
+  about VARCHAR,
+  experience VARCHAR,
+  techs VARCHAR
 )`;
 
 module.exports = createUsers;

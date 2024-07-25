@@ -1,84 +1,105 @@
-// Importação de módulos e configurações
 const migrationsRun = require("./database/sqlite/migrations");
-const sqliteConnection = require("./database/sqlite")
-const express = require('express')
-const app = express()
+const sqliteConnection = require("./database/sqlite");
+const express = require('express');
+const app = express();
+const { hash, compare } = require("bcryptjs");
 
-// Execução de migrações para inicializar o banco de dados
-migrationsRun()
-
-// Middleware para manipular JSON em requisições
+migrationsRun();
 app.use(express.json());
 
-// Rota para obter um usuário pelo seu ID
 app.get('/users/:id', async (req, res) => {
-  let { id } = req.params
-
-  // Conexão com o banco de dados SQLite
+  const { id } = req.params;
   const database = await sqliteConnection();
 
-  // Consulta para obter um usuário pelo seu ID
-  const result = await database.get(
-    "SELECT * FROM users WHERE id = ?",
-    [id]
-  );
+  const result = await database.get("SELECT * FROM users WHERE id = ?", [id]);
 
-  // Envia o resultado como resposta
-  res.send(result)
-})
+  if (result) {
+    if (result.techs) {
+      result.techs = JSON.parse(result.techs);
+    }
+    delete result.password; // Remove a senha do resultado
+  }
 
-// Rota para criar um novo usuário
+  res.status(result ? 200 : 404).send(result || { message: "Usuário não encontrado." });
+});
+
+
 app.post('/users', async (req, res) => {
-  let { name, position, password, about } = req.body
-
-  // Conexão com o banco de dados SQLite
+  const { name, position, password, about, experience, techs } = req.body;
   const database = await sqliteConnection();
 
-  // Verificação de dados faltando
   if (!password || !position || !name) {
-    return res.send({ "message": "Dados estão faltando." })
+    return res.status(400).send({ message: "Dados estão faltando." });
   }
 
-  // Inserir um novo usuário no banco de dados
-  const result = database.run("INSERT INTO users(name, position, password, about) VALUES (?, ?, ?, ?)",
-    [name, position, password, about]);
+  const hashedPassword = await hash(password, 8);
+  const techsJSON = JSON.stringify(techs);
 
-  // Envia o resultado como resposta
-  res.send(result);
-});
-
-// Rota para excluir um usuário pelo seu ID
-app.delete('/users/:id', async (req, res) => {
-  let { id } = req.params
-  let { password } = req.body
-
-  // Conexão com o banco de dados SQLite
-  const database = await sqliteConnection();
-
-  // Verificação de senha inválida
-  if (!password) {
-    return res.send({ "message": "Senha inválida." })
-  }
-
-  // Consulta para obter um usuário pelo seu ID
-  const result = await database.get(
-    "SELECT * FROM users WHERE id = ?",
-    [id]
+  const result = await database.run(
+    "INSERT INTO users(name, position, password, about, experience, techs) VALUES (?, ?, ?, ?, ?, ?)",
+    [name, position, hashedPassword, about, experience, techsJSON]
   );
 
-  // Verificação de senha
-  if (password != result.password) {
-    return res.send({ "message": "Senha inválida." })
-  }
-
-  // Exclui o usuário do banco de dados
-  database.run("DELETE FROM users WHERE id = ?",
-    [id])
-
-  // Envia uma resposta vazia
-  res.send();
+  res.status(201).send(result);
 });
 
-// Inicia o servidor na porta 3000
+app.put('/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, position, password, new_password, about, experience, techs } = req.body;
+  const database = await sqliteConnection();
+
+  const user = await database.get("SELECT * FROM users WHERE id = ?", [id]);
+  if (!user) {
+    return res.status(404).send({ message: "Usuário não encontrado." });
+  }
+
+  if (!password) {
+    return res.status(400).send({ message: "É necessário informar a senha para atualizar qualquer informação." });
+  }
+
+  const checkOldPassword = await compare(password, user.password);
+  if (!checkOldPassword) {
+    return res.status(400).send({ message: "A senha não confere." });
+  }
+
+  user.name = name ?? user.name;
+  user.position = position ?? user.position;
+  user.about = about ?? user.about;
+  user.experience = experience ?? user.experience;
+  user.techs = techs ? JSON.stringify(techs) : user.techs;
+  user.password = new_password ? await hash(new_password, 8) : user.password;
+
+  const result = await database.run(
+    "UPDATE users SET name = ?, position = ?, password = ?, about = ?, experience = ?, techs = ? WHERE id = ?",
+    [user.name, user.position, user.password, user.about, user.experience, user.techs, id]
+  );
+
+  res.status(200).send(result);
+});
+
+app.delete('/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+  const database = await sqliteConnection();
+
+  if (!password) {
+    return res.status(400).send({ message: "Senha inválida." });
+  }
+
+  const user = await database.get("SELECT * FROM users WHERE id = ?", [id]);
+  if (!user) {
+    return res.status(404).send({ message: "Usuário não encontrado." });
+  }
+
+  const isPasswordValid = await compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(400).send({ message: "Senha inválida." });
+  }
+
+  await database.run("DELETE FROM users WHERE id = ?", [id]);
+
+  res.status(204).send();
+});
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor está rodando na porta ${PORT}`));
