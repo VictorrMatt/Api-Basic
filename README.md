@@ -1,4 +1,21 @@
-## Documentação da API
+## API de Gestão de Usuários e Projetos
+
+**Descrição:**
+
+Esta API RESTful, desenvolvida com Express.js e SQLite, oferece funcionalidades para gerenciar usuários e seus respectivos projetos. As operações CRUD (Create, Read, Update, Delete) estão disponíveis para ambos os recursos, garantindo flexibilidade e controle sobre os dados.
+
+**Funcionalidades:**
+
+* **Usuários:**
+  * Criar novos usuários
+  * Obter informações de usuários específicos
+  * Atualizar informações de usuários existentes
+  * Deletar usuários
+* **Projetos:**
+  * Criar novos projetos associados a um usuário específico
+  * Obter informações de projetos específicos ou de todos os projetos de um usuário
+  * Atualizar informações de projetos existentes
+  * Deletar projetos
 
 ### Tabelas do Banco de Dados
 
